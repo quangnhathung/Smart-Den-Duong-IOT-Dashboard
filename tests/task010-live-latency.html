@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<title>TASK-010 · Đo dữ liệu live</title>
+<style>body{font:16px system-ui;margin:12px;background:#f8fafc;color:#0f172a}header{display:flex;gap:20px;align-items:center}iframe{width:100%;height:78vh;border:1px solid #94a3b8}pre{white-space:pre-wrap;max-height:12vh;overflow:auto;font-size:13px}strong{color:#047857}</style>
+<header><h1>TASK-010 · Quan sát live</h1><strong id="status">Đang nối bộ ghi…</strong></header>
+<p>Trang dưới là Dashboard thật, gọi API thật. Bộ ghi chỉ quan sát fetch/DOM/paint; không tạo telemetry hoặc gửi lệnh.</p>
+<p><button id="markStart" disabled>Bắt đầu lượt đo</button> <span id="trialHint">Chờ chuẩn bị lượt đo…</span></p>
+<iframe id="dashboard" src="../index.html#nodes/node_01" title="Dashboard live node_01"></iframe>
+<pre id="events"></pre>
+<script src="task010-live-latency.js"></script>
+</html>
