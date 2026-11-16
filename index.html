@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Giám sát và điều khiển mô hình đèn đường thông minh Nhóm 7."
+    />
+    <title>SmartLight · Điều hành chiếu sáng</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./css/styles.css" />
+    <script type="module" src="./js/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Đến nội dung chính</a>
+    <svg
+      class="symbol-library"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <defs>
+        <symbol id="i-lamp" viewBox="0 0 24 24">
+          <path
+            d="M6 21h10M11 21V5a3 3 0 0 1 3-3h4v4h-7m4 4v2m4-2 1 2M11 9l-1 2"
+          />
+        </symbol>
+        <symbol id="i-grid" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" />
+        </symbol>
+        <symbol id="i-chart" viewBox="0 0 24 24">
+          <path d="M3 3v18h18M6 15l4-5 4 3 6-8" />
+        </symbol>
+        <symbol id="i-bell" viewBox="0 0 24 24">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-12 12h6" />
+        </symbol>
+        <symbol id="i-flask" viewBox="0 0 24 24">
+          <path d="M8 3h8M10 3v7L4 20h16l-6-10V3M8 15h8" />
+        </symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24">
+          <path d="M20 7a8 8 0 1 0 1 8M20 2v6h-6" />
+        </symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24">
+          <path d="M5 12h14m-6-6 6 6-6 6" />
+        </symbol>
+        <symbol id="i-zap" viewBox="0 0 24 24">
+          <path d="M13 2 4 14h7l-1 8 10-13h-7z" />
+        </symbol>
+      </defs>
+    </svg>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Điều hướng chính">
+        <a href="#overview" class="brand"
+          ><span class="brand-mark"
+            ><svg class="icon"><use href="#i-lamp" /></svg></span
+          ><span>SmartLight<small>HỆ THỐNG CHIẾU SÁNG</small></span></a
+        >
+        <div class="nav-caption">KHÔNG GIAN VẬN HÀNH</div>
+        <nav id="navigation">
+          <a href="#overview" data-nav="overview"
+            ><svg class="icon"><use href="#i-grid" /></svg>Tổng quan</a
+          >
+          <a href="#nodes/node_01" data-nav="nodes"
+            ><svg class="icon"><use href="#i-lamp" /></svg>Điều khiển node</a
+          >
+          <a href="#history" data-nav="history"
+            ><svg class="icon"><use href="#i-chart" /></svg>Lịch sử dữ liệu</a
+          >
+          <a href="#alerts" data-nav="alerts"
+            ><svg class="icon"><use href="#i-bell" /></svg>Cảnh báo
+            <span id="alertCount" class="nav-count">—</span></a
+          >
+          <a href="#experiments" data-nav="experiments"
+            ><svg class="icon"><use href="#i-flask" /></svg>Phiên thực nghiệm</a
+          >
+        </nav>
+        <div class="sidebar-footer">
+          <span class="project-dot"></span>
+          <div>Đồ án IoT · Nhóm 7<small>Mô hình Wokwi · MQTT v1</small></div>
+        </div>
+      </aside>
+      <div class="workspace">
+        <header class="topbar">
+          <div>
+            <span class="breadcrumb"
+              >SmartLight <span>/</span>
+              <span id="breadcrumb">Tổng quan</span></span
+            >
+          </div>
+          <div class="top-actions">
+            <span id="apiBadge" class="badge neutral">Đang kết nối</span
+            ><span class="avatar" aria-label="Nhóm 7">N7</span>
+          </div>
+        </header>
+        <main id="main" tabindex="-1">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">GIÁM SÁT & ĐIỀU KHIỂN</p>
+              <h1 id="pageTitle" tabindex="-1">Tổng quan hệ thống</h1>
+              <p id="pageDescription" class="muted">
+                Theo dõi hoạt động của tuyến đèn từ một nơi.
+              </p>
+            </div>
+            <button id="refresh" class="button secondary">
+              <svg class="icon"><use href="#i-refresh" /></svg>Cập nhật
+            </button>
+          </div>
+          <div id="connectionNotice" class="notice" role="status" hidden></div>
+          <div class="source-note">
+            Dữ liệu cảm biến và điện năng thuộc
+            <strong>mô hình mô phỏng</strong>. Thời gian hiển thị: Việt Nam
+            (UTC+7).
+          </div>
+
+          <section id="view-overview" class="view" aria-label="Tổng quan">
+            <div class="kpi-grid">
+              <article class="card kpi">
+                <div class="kpi-label">
+                  Node đang online
+                  <span class="kpi-icon"
+                    ><svg class="icon"><use href="#i-lamp" /></svg
+                  ></span>
+                </div>
+                <div class="kpi-value">
+                  <span id="onlineCount">—</span><span class="unit">/ 3</span>
+                </div>
+                <div id="nodeSummary" class="kpi-foot">
+                  Đang chờ dữ liệu từ máy chủ
+                </div>
+              </article>
+              <article class="card kpi">
+                <div class="kpi-label">
+                  Lỗi tải đang mở
+                  <span class="kpi-icon amber"
+                    ><svg class="icon"><use href="#i-bell" /></svg
+                  ></span>
+                </div>
+                <div id="faultCount" class="kpi-value">—</div>
+                <div class="kpi-foot">
+                  Tách riêng với trạng thái mất kết nối
+                </div>
+              </article>
+              <article class="card kpi">
+                <div class="kpi-label">
+                  Điện năng mô phỏng
+                  <span class="kpi-icon"
+                    ><svg class="icon"><use href="#i-zap" /></svg
+                  ></span>
+                </div>
+                <div class="kpi-value">
+                  <span id="energyValue">—</span><span class="unit">Wh</span>
+                </div>
+                <div class="kpi-foot">Tổng thu thập trong 1 giờ gần nhất</div>
+              </article>
+              <article class="card kpi">
+                <div class="kpi-label">
+                  Độ phủ toàn tuyến
+                  <span class="kpi-icon"
+                    ><svg class="icon"><use href="#i-chart" /></svg
+                  ></span>
+                </div>
+                <div class="kpi-value">
+                  <span id="coverageValue">—</span><span class="unit">%</span>
+                </div>
+                <div class="kpi-foot">Theo thời gian nhận · Cả 3 node</div>
+              </article>
+            </div>
+            <section class="card route-panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Tuyến đèn thông minh</h2>
+                  <p class="muted">
+                    Độ sáng hiển thị theo PWM đang áp dụng tại node.
+                  </p>
+                </div>
+                <span class="badge neutral">3 vị trí giám sát</span>
+              </div>
+              <div class="road-stage">
+                <div class="road-sky">
+                  <span class="sky-label">MÔ HÌNH TUYẾN ĐƯỜNG</span
+                  ><span class="sky-coordinate">node_01 — node_03</span>
+                </div>
+                <div id="roadNodes" class="road-nodes"></div>
+                <div class="road-track"><span></span></div>
+              </div>
+              <div class="route-legend">
+                <span><i class="dot green"></i>Online, dữ liệu mới</span
+                ><span><i class="dot grey"></i>Offline / chưa có dữ liệu</span
+                ><span>Giá trị cũ luôn có nhãn riêng</span>
+              </div>
+            </section>
+            <div id="nodeCards" class="node-grid"></div>
+            <div class="bottom-grid">
+              <section class="card">
+                <div class="section-heading">
+                  <div>
+                    <h2>Sức khỏe hệ thống</h2>
+                    <p class="muted">Kết nối và khả năng xử lý của máy chủ.</p>
+                  </div>
+                </div>
+                <div id="healthRows" class="health-rows">
+                  <p class="empty">Đang kiểm tra kết nối…</p>
+                </div>
+              </section>
+              <section class="card">
+                <div class="section-heading">
+                  <div>
+                    <h2>Cảnh báo gần đây</h2>
+                    <p class="muted">Sự kiện lỗi tải và mất kết nối.</p>
+                  </div>
+                  <a class="text-link" href="#alerts">Xem tất cả →</a>
+                </div>
+                <div id="recentAlerts">
+                  <p class="empty">Đang tải cảnh báo…</p>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section
+            id="view-nodes"
+            class="view"
+            hidden
+            aria-label="Điều khiển node"
+          >
+            <div class="toolbar">
+              <label for="selectedNode">Node đang xem</label
+              ><select id="selectedNode">
+                <option>node_01</option>
+                <option>node_02</option>
+                <option>node_03</option></select
+              ><span id="detailBadge" class="badge neutral"
+                >Chưa có dữ liệu</span
+              >
+            </div>
+            <div class="detail-grid">
+              <section class="card">
+                <div class="section-heading">
+                  <div>
+                    <h2>Trạng thái tại node</h2>
+                    <p class="muted">
+                      Giá trị thực nhận từ telemetry, không phải bản nháp điều
+                      khiển.
+                    </p>
+                  </div>
+                </div>
+                <dl id="detailReadings" class="readings"></dl>
+              </section>
+              <section class="card control-panel">
+                <div class="section-heading">
+                  <div>
+                    <h2>Thiết lập điều khiển</h2>
+                    <p class="muted">Chỉ gửi khi bấm Áp dụng.</p>
+                  </div>
+                </div>
+                <form id="commandForm">
+                  <label for="controlMode">Chế độ đề nghị</label
+                  ><select id="controlMode">
+                    <option value="AUTO">AUTO · Tự động</option>
+                    <option value="MANUAL">MANUAL · Thủ công</option>
+                  </select>
+                  <div class="brightness-row">
+                    <label for="brightness">Độ sáng đề nghị</label>
+                    <div>
+                      <input
+                        id="brightnessNumber"
+                        aria-label="Độ sáng đề nghị phần trăm"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value="80"
+                      /><span>%</span>
+                    </div>
+                  </div>
+                  <input
+                    id="brightness"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value="80"
+                  />
+                  <p class="field-help">
+                    MANUAL tự trở về AUTO sau 60 giây theo đồng hồ node. Khi mất
+                    MQTT, node trở về AUTO.
+                  </p>
+                  <p id="controlLock" class="lock-reason">
+                    Đang đồng bộ trạng thái.
+                  </p>
+                  <button
+                    id="applyCommand"
+                    class="button primary"
+                    type="submit"
+                  >
+                    Áp dụng thiết lập
+                    <svg class="icon"><use href="#i-arrow" /></svg>
+                  </button>
+                  <div
+                    id="commandFeedback"
+                    class="command-feedback"
+                    role="status"
+                    aria-live="polite"
+                  ></div>
+                </form>
+              </section>
+            </div>
+          </section>
+
+          <section id="view-history" class="view" hidden aria-label="Lịch sử">
+            <form id="historyFilter" class="card filter-bar">
+              <div>
+                <label for="historyNode">Node</label
+                ><select id="historyNode">
+                  <option>node_01</option>
+                  <option>node_02</option>
+                  <option>node_03</option>
+                </select>
+              </div>
+              <div>
+                <label for="historyFrom">Từ · giờ Việt Nam</label
+                ><input id="historyFrom" type="datetime-local" required />
+              </div>
+              <div>
+                <label for="historyTo">Đến · giờ Việt Nam</label
+                ><input id="historyTo" type="datetime-local" required />
+              </div>
+              <div>
+                <label for="historyExperiment">Phiên đo</label
+                ><select id="historyExperiment">
+                  <option value="">Khoảng thời gian</option>
+                </select>
+              </div>
+              <button class="button primary" type="submit">Tải dữ liệu</button>
+            </form>
+            <p id="historyMessage" class="notice" role="status">
+              Chọn bộ lọc để tải lịch sử.
+            </p>
+            <div id="historyStats" class="stat-strip"></div>
+            <div class="chart-grid">
+              <section class="card">
+                <div class="section-heading">
+                  <h2>Độ sáng đang áp dụng <small>%</small></h2>
+                  <span class="chart-key"
+                    ><i style="background: #047857"></i>PWM</span
+                  >
+                </div>
+                <div id="brightnessChart"></div>
+              </section>
+              <section class="card">
+                <div class="section-heading">
+                  <h2>Công suất mô phỏng <small>W</small></h2>
+                  <span class="chart-key"
+                    ><i style="background: #2563eb"></i>Công suất</span
+                  >
+                </div>
+                <div id="powerChart"></div>
+              </section>
+            </div>
+            <section class="card">
+              <div class="section-heading">
+                <div>
+                  <h2>Dữ liệu gốc</h2>
+                  <p class="muted">
+                    Các đường biểu đồ ngắt tại khoảng thiếu dữ liệu. Không nội
+                    suy qua gap.
+                  </p>
+                </div>
+                <div class="pagination">
+                  <button
+                    id="historyPrevious"
+                    disabled
+                    class="button secondary"
+                    type="button"
+                  >
+                    ← Trang trước</button
+                  ><span id="historyPageLabel">—</span
+                  ><button
+                    id="historyNext"
+                    disabled
+                    class="button secondary"
+                    type="button"
+                  >
+                    Trang sau →
+                  </button>
+                </div>
+              </div>
+              <div class="sample-picker">
+                <label for="sampleIndex">Xem giá trị mẫu bằng bàn phím</label
+                ><input
+                  id="sampleIndex"
+                  type="range"
+                  min="0"
+                  max="0"
+                  value="0"
+                /><output id="sampleValue">—</output>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <caption class="sr-only">
+                    Dữ liệu telemetry gốc của trang lịch sử đang xem
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th>Thời điểm nhận</th>
+                      <th>Chế độ / môi trường</th>
+                      <th>Target / applied</th>
+                      <th>Công suất</th>
+                      <th>Khoảng cách</th>
+                      <th>Chất lượng</th>
+                    </tr>
+                  </thead>
+                  <tbody id="historyRows"></tbody>
+                </table>
+              </div>
+              <div class="table-footer">
+                <span id="rawPageLabel">—</span>
+                <div>
+                  <button
+                    id="rawPrevious"
+                    disabled
+                    class="button secondary"
+                    type="button"
+                  >
+                    ← 100 dòng trước</button
+                  ><button
+                    id="rawNext"
+                    disabled
+                    class="button secondary"
+                    type="button"
+                  >
+                    100 dòng sau →
+                  </button>
+                </div>
+              </div>
+            </section>
+          </section>
+
+          <section id="view-alerts" class="view" hidden aria-label="Cảnh báo">
+            <div class="toolbar">
+              <label for="alertNode">Lọc theo node</label
+              ><select id="alertNode">
+                <option value="">Tất cả node</option>
+                <option>node_01</option>
+                <option>node_02</option>
+                <option>node_03</option></select
+              ><span id="alertsMessage" role="status"></span>
+            </div>
+            <section class="card">
+              <div class="table-scroll">
+                <table>
+                  <caption class="sr-only">
+                    Lịch sử cảnh báo
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th>Node</th>
+                      <th>Cảnh báo</th>
+                      <th>Trạng thái</th>
+                      <th>Bắt đầu</th>
+                      <th>Kết thúc</th>
+                    </tr>
+                  </thead>
+                  <tbody id="alertRows"></tbody>
+                </table>
+              </div>
+              <div class="table-footer">
+                <span id="alertPageLabel">—</span>
+                <div>
+                  <button id="alertsPrevious" disabled class="button secondary">
+                    ← Trước</button
+                  ><button id="alertsNext" disabled class="button secondary">
+                    Sau →
+                  </button>
+                </div>
+              </div>
+            </section>
+          </section>
+
+          <section
+            id="view-experiments"
+            class="view"
+            hidden
+            aria-label="Phiên thực nghiệm"
+          >
+            <div class="experiments-grid">
+              <section class="card">
+                <div class="section-heading">
+                  <div>
+                    <h2>Phiên thực nghiệm</h2>
+                    <p class="muted">
+                      Dữ liệu được đọc lại từ máy chủ sau mỗi lần tải trang.
+                    </p>
+                  </div>
+                </div>
+                <div id="experimentMessage" class="notice" role="status">
+                  Đang tải danh sách phiên…
+                </div>
+                <div id="experimentList" class="experiment-list"></div>
+                <div class="table-footer">
+                  <span id="experimentPageLabel">—</span>
+                  <div>
+                    <button
+                      id="experimentsPrevious"
+                      disabled
+                      class="button secondary"
+                    >
+                      ← Trước</button
+                    ><button
+                      id="experimentsNext"
+                      disabled
+                      class="button secondary"
+                    >
+                      Sau →
+                    </button>
+                  </div>
+                </div>
+              </section>
+              <section class="card">
+                <div class="section-heading"><h2>Bắt đầu phiên mới</h2></div>
+                <form id="experimentForm" class="stack-form">
+                  <label for="experimentName">Tên phiên</label
+                  ><input
+                    id="experimentName"
+                    maxlength="120"
+                    required
+                    placeholder="Ví dụ: EX-02 · Đêm không chuyển động"
+                  /><label for="experimentConfig">Cấu hình phiên · JSON</label
+                  ><textarea id="experimentConfig" rows="4" spellcheck="false">
+{"source":"live","voltage_v":12,"rated_power_w":24}</textarea
+                  ><label for="experimentNotes">Ghi chú / lịch thao tác</label
+                  ><textarea
+                    id="experimentNotes"
+                    rows="3"
+                    maxlength="4000"
+                    placeholder="Ghi hash firmware và điều kiện đo thực tế…"
+                  ></textarea>
+                  <p class="field-help">
+                    Chỉ một phiên được mở tại một thời điểm. Giá trị cấu hình do
+                    người vận hành xác nhận.
+                  </p>
+                  <button
+                    id="startExperiment"
+                    disabled
+                    class="button primary"
+                    type="submit"
+                  >
+                    Bắt đầu phiên đo
+                  </button>
+                </form>
+              </section>
+            </div>
+            <section id="experimentDetail" class="card" hidden>
+              <div class="section-heading">
+                <div>
+                  <h2 id="experimentDetailTitle">Chi tiết phiên</h2>
+                  <p id="experimentDetailTime" class="muted"></p>
+                </div>
+                <div class="action-row">
+                  <button id="stopExperiment" class="button secondary">
+                    Dừng phiên</button
+                  ><button id="exportExperiment" class="button primary">
+                    Tải CSV
+                  </button>
+                </div>
+              </div>
+              <p id="experimentDetailNotes"></p>
+              <div id="experimentStats" class="stat-strip"></div>
+              <pre id="experimentDetailConfig"></pre>
+              <p
+                id="experimentActionMessage"
+                class="field-help"
+                role="status"
+              ></p>
+            </section>
+          </section>
+          <footer class="page-footer">
+            <span>SmartLight · Đồ án đèn đường thông minh</span
+            ><span id="lastUpdated">Chưa nhận dữ liệu</span>
+          </footer>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

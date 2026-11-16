@@ -1,0 +1,13 @@
+{
+  "liveServer.settings.host": "127.0.0.1",
+  "liveServer.settings.port": 5500,
+  "liveServer.settings.root": "/",
+  "liveServer.settings.useLocalIp": false,
+  "liveServer.settings.ignoreFiles": [
+    "**/.git/**",
+    "**/output/**",
+    "**/.playwright-cli/**",
+    "**/tests/**",
+    "**/*.md"
+  ]
+}
